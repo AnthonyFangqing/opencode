@@ -28,8 +28,17 @@ function sortSessions(now: number) {
   }
 }
 
-const isRootVisibleSession = (session: Session, directory: string) =>
-  workspaceKey(session.directory) === workspaceKey(directory) && !session.parentID && !session.time?.archived
+const isRootVisibleSession = (session: Session, directory: string) => {
+  if (session.parentID || session.time?.archived) return false
+  const sessionKey = workspaceKey(session.directory)
+  const dirKey = workspaceKey(directory)
+  if (sessionKey === dirKey) return true
+  // When the directory is "/" it means no git root was found — the project
+  // covers the entire filesystem. In that case every session belonging to
+  // the project should be visible regardless of its specific directory.
+  if (dirKey === "/") return true
+  return false
+}
 
 export const roots = (store: SessionStore) =>
   (store.session ?? []).filter((session) => isRootVisibleSession(session, store.path.directory))
